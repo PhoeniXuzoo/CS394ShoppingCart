@@ -52,7 +52,7 @@ const ShelfContainer = ({ products, addItemToCart, openSidebar }) => (
   </Column.Group>
 );
 
-const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
+const Cart = ({ selectedItem, closeSidebar, addItemToCart, revItemFromCart } ) => {
   var amount = 0;
   for (var i = 0; i < selectedItem.length; ++i) {
     amount += (selectedItem[i].S + selectedItem[i].M + selectedItem[i].L + selectedItem[i].XL) * selectedItem[i].price;
@@ -73,8 +73,8 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
           <Content size = "small">
             Title:{item.title}<br />Size:S<br />Quatity:{item.S}<br />Price:{item.S * item.price}
           </Content>
-          <Button key = {"SM1" + item.sku} size = "small">Minus One</Button>
-          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "S", item.price, item.title);}}>Add One</Button>
+          <Button size = "small" onClick = {() => {revItemFromCart(item.sku, "S")}}>Minus One</Button>
+          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "S", item.price, item.title)}}>Add One</Button>
         </Box> : null
       ))}
       { selectedItem.map(item => ( (item.M > 0) ?
@@ -85,8 +85,8 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
           <Content size = "small">
             Title:{item.title}<br />Size:M<br />Quatity:{item.M}<br />Price:{item.M * item.price}
           </Content>
-          <Button key = {"MM1" + item.sku} size = "small">Minus One</Button>
-          <Button key = {"MA1" + item.sku} size = "small">Add One</Button>
+          <Button size = "small" onClick = {() => {revItemFromCart(item.sku, "M")}}>Minus One</Button>
+          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "M", item.price, item.title)}}>Add One</Button>
         </Box> : null
       ))}
       { selectedItem.map(item => ( (item.L > 0) ?
@@ -97,8 +97,8 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
           <Content size = "small">
             Title:{item.title}<br />Size:L<br />Quatity:{item.L}<br />Price:{item.L * item.price}
           </Content>
-          <Button key = {"LM1" + item.sku} size = "small">Minus One</Button>
-          <Button key = {"LA1" + item.sku} size = "small">Add One</Button>
+          <Button size = "small" onClick = {() => {revItemFromCart(item.sku, "L")}}>Minus One</Button>
+          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "L", item.price, item.title)}}>Add One</Button>
         </Box> : null
       ))}
       { selectedItem.map(item => ( (item.XL > 0) ?
@@ -109,8 +109,8 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
           <Content size = "small">
             Title:{item.title}<br />Size:XL<br />Quatity:{item.XL}<br />Price:{item.XL * item.price}
           </Content>
-          <Button key = {"XLM1" + item.sku} size = "small">Minus One</Button>
-          <Button key = {"XLA1" + item.sku} size = "small">Add One</Button>
+          <Button size = "small" onClick = {() => {revItemFromCart(item.sku, "XL")}}>Minus One</Button>
+          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "XL", item.price, item.title)}}>Add One</Button>
         </Box> : null
       ))}
       <Title>Total:{amount}</Title>
@@ -128,10 +128,13 @@ const useSelection = () => {
     var alreadyIn = false;
     for (var i = 0; i < oldSelectedList.length; ++i) {
       var temp = oldSelectedList[i];
-      newSelectedList.push(temp)
+      newSelectedList.push(temp);
       if (oldSelectedList[i].sku === sku) {
         alreadyIn = true;
         if (size === "S") newSelectedList[i].S += 1;
+        if (size === "M") newSelectedList[i].M += 1;
+        if (size === "L") newSelectedList[i].L += 1;
+        if (size === "XL") newSelectedList[i].XL += 1;
       }
     }
     if (!alreadyIn) {
@@ -139,18 +142,23 @@ const useSelection = () => {
     }
     setSelected(newSelectedList);
   }
-  
+
   const revItemFromCart = (sku, size) => {
-    var temp = selected;
-    if (temp.hasOwnProperty(sku)) {
-      if (temp[sku][size] > 0) {
-        temp[sku][size] -= 1;
-        if (temp[sku]["S"] === 0 && temp[sku]["M"] === 0 && temp[sku]["L"] ===0 && temp[sku]["XL"] === 0) {
-          delete temp[sku];
-        }
-        setSelected(temp);
+    var oldSelectedList = Object.values(selected);
+    var newSelectedList = [];
+    for (var i = 0; i < oldSelectedList.length; ++i) {
+      var temp = oldSelectedList[i];
+      if(temp.sku === sku) {
+        if ("S" === size) temp.S -= 1;
+        if ("M" === size) temp.M -= 1;
+        if ("L" === size) temp.L -= 1;
+        if ("XL" === size) temp.XL -= 1;
+        if (temp.S === 0 && temp.M === 0 && temp.L === 0 && temp.XL ===0) continue;
+        else newSelectedList.push(temp);
       }
+      else newSelectedList.push(temp);
     }
+    setSelected(newSelectedList);
   }
   return [selected, addItemToCart, revItemFromCart, setSelected];
 }
@@ -176,7 +184,7 @@ const App = () => {
     <React.Fragment>
       {/* <Navbar></Navbar> */}
       <Sidebar
-        sidebar={<Cart selectedItem = { selectedItem } closeSidebar = {() => setSidebarOpen(false)} addItemToCart = {addItemToCart} />}
+        sidebar={<Cart selectedItem = { selectedItem } closeSidebar = {() => setSidebarOpen(false)} addItemToCart = {addItemToCart} revItemFromCart = {revItemFromCart}/>}
         open={sidebarOpen}
         onSetOpen={(open) => {setSidebarOpen(open)}}
         styles={{ sidebar: { width: 300, background: "white" } }}>
