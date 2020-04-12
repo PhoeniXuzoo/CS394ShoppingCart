@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
-import { Container, Column, Card, Button, Content, Box, Title } from 'rbx';
+import { Container, Column, Card, Button, Content, Box, Title, Media, Image } from 'rbx';
 //import CartSidebar from './components/CartSidebar';
 import Sidebar from 'react-sidebar';
 //import ShirtStore from './components/ShirtStore';
@@ -44,7 +44,7 @@ const ShelfContainer = ({ products, modifySelected }) => (
   </Column.Group>
 );
 
-const Cart = ({ selectedItem } ) => {
+const Cart = ({ selectedItem, closeSidebar } ) => {
   var amount = 0;
   for (var i = 0; i < selectedItem.length; ++i) {
     amount += (selectedItem[i].S + selectedItem[i].M + selectedItem[i].L + selectedItem[i].XL) * selectedItem[i].price;
@@ -53,9 +53,14 @@ const Cart = ({ selectedItem } ) => {
   return (
     <React.Fragment>
       <Title align="center">Cart</Title>
+      <Container>
+        <Button onClick = {closeSidebar}>Close</Button>     
       
       { selectedItem.map(item => ( (item.S > 0) ?
         <Box key = {"S"+item.sku} >
+          <Content>
+          <img alt = "img" src = {"./data/products/" + item.sku + "_1.jpg"} width = "110px" height = "160px" />
+          </Content>
           <Content size = "small">
             Title:{item.title}<br />Size:S<br />Quatity:{item.S}<br />Price:{item.S * item.price}
           </Content>
@@ -65,6 +70,9 @@ const Cart = ({ selectedItem } ) => {
       ))}
       { selectedItem.map(item => ( (item.M > 0) ?
         <Box key = {"M"+item.sku} >
+          <Content>
+          <img alt = "img" src = {"./data/products/" + item.sku + "_1.jpg"} width = "110px" height = "160px" />
+          </Content>
           <Content size = "small">
             Title:{item.title}<br />Size:M<br />Quatity:{item.M}<br />Price:{item.M * item.price}
           </Content>
@@ -74,6 +82,9 @@ const Cart = ({ selectedItem } ) => {
       ))}
       { selectedItem.map(item => ( (item.L > 0) ?
         <Box key = {"L"+item.sku} >
+          <Content>
+          <img alt = "img" src = {"./data/products/" + item.sku + "_1.jpg"} width = "110px" height = "160px" />
+          </Content>
           <Content size = "small">
             Title:{item.title}<br />Size:L<br />Quatity:{item.L}<br />Price:{item.L * item.price}
           </Content>
@@ -83,6 +94,9 @@ const Cart = ({ selectedItem } ) => {
       ))}
       { selectedItem.map(item => ( (item.XL > 0) ?
         <Box key = {"XL"+item.sku} >
+          <Content>
+          <img alt = "img" src = {"./data/products/" + item.sku + "_1.jpg"} width = "110px" height = "160px" />
+          </Content>
           <Content size = "small">
             Title:{item.title}<br />Size:XL<br />Quatity:{item.XL}<br />Price:{item.XL * item.price}
           </Content>
@@ -91,7 +105,7 @@ const Cart = ({ selectedItem } ) => {
         </Box> : null
       ))}
       <Title>Total:{amount}</Title>
-      
+      </Container>
       
     </React.Fragment>
   )
@@ -127,7 +141,7 @@ const App = () => {
     <React.Fragment>
       {/* <Navbar></Navbar> */}
       <Sidebar
-        sidebar={<Cart selectedItem = { selectedItem }/>}
+        sidebar={<Cart selectedItem = { selectedItem } closeSidebar = {() => setSidebarOpen(false)} />}
         open={sidebarOpen}
         onSetOpen={(open) => {setSidebarOpen(open)}}
         styles={{ sidebar: { width: 300, background: "white" } }}>
