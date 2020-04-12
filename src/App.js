@@ -13,7 +13,7 @@ const SizeSlector = ({ product, state }) => (
   </Button.Group>
 );
 
-const ShelfItem = ({ product, modifySelected }) => {
+const ShelfItem = ({ product, addItemToCart, openSidebar }) => {
   const [sz, setSz] = useState(null);
   return (
   <Column size = "one-quarter"> 
@@ -31,24 +31,33 @@ const ShelfItem = ({ product, modifySelected }) => {
       </Card.Content>
       <Card.Footer>
         <Card.Footer.Item>
-          <Button>Add to Cart</Button>
+          <Button onClick = {() => {
+            if (sz !== null) {
+              addItemToCart(product.sku, sz, product.price, product.title);
+              openSidebar();
+            }
+            else {
+              alert("Please select size.");
+            }
+          }}>Add to Cart</Button>
         </Card.Footer.Item>
       </Card.Footer>
     </Card>
   </Column>);
 };
 
-const ShelfContainer = ({ products, modifySelected }) => (
+const ShelfContainer = ({ products, addItemToCart, openSidebar }) => (
   <Column.Group multiline>
-    { products.map(product => <ShelfItem key = {product.sku} product = { product } modifySelected = {modifySelected}/>) }
+    { products.map(product => <ShelfItem key = {product.sku} product = { product } addItemToCart = {addItemToCart} openSidebar = {openSidebar}/>) }
   </Column.Group>
 );
 
-const Cart = ({ selectedItem, closeSidebar } ) => {
+const Cart = ({ selectedItem, closeSidebar, addItemToCart } ) => {
   var amount = 0;
   for (var i = 0; i < selectedItem.length; ++i) {
     amount += (selectedItem[i].S + selectedItem[i].M + selectedItem[i].L + selectedItem[i].XL) * selectedItem[i].price;
   }
+  amount = amount.toFixed(2);
 
   return (
     <React.Fragment>
@@ -65,7 +74,7 @@ const Cart = ({ selectedItem, closeSidebar } ) => {
             Title:{item.title}<br />Size:S<br />Quatity:{item.S}<br />Price:{item.S * item.price}
           </Content>
           <Button key = {"SM1" + item.sku} size = "small">Minus One</Button>
-          <Button key = {"SA1" + item.sku} size = "small">Add One</Button>
+          <Button size = "small" onClick = {() => {addItemToCart(item.sku, "S", item.price, item.title);}}>Add One</Button>
         </Box> : null
       ))}
       { selectedItem.map(item => ( (item.M > 0) ?
@@ -111,18 +120,46 @@ const Cart = ({ selectedItem, closeSidebar } ) => {
   )
 }
 
-function initialSelected(products) {
-  var js = {}
-  for (let i = 0; i < products.length; ++i) {
-    js[products[i].sku] = {"S":0};
+const useSelection = () => {
+  const [selected, setSelected] = useState({"12064273040195392":{"sku":"12064273040195392", "S":0, "M":0, "L":3, "XL":1, "price":10.9, "title":"Cat Tee Black T-Shirt"}, "51498472915966370": {"sku":"51498472915966370", "S":1, "M":2, "L":0, "XL":0, "price":29.45, "title":"Dark Thug Blue-Navy T-Shirt"}});
+  const addItemToCart = (sku, size, price, title) => {
+    var oldSelectedList = Object.values(selected);
+    var newSelectedList = [];
+    var alreadyIn = false;
+    for (var i = 0; i < oldSelectedList.length; ++i) {
+      var temp = oldSelectedList[i];
+      newSelectedList.push(temp)
+      if (oldSelectedList[i].sku === sku) {
+        alreadyIn = true;
+        if (size === "S") newSelectedList[i].S += 1;
+      }
+    }
+    if (!alreadyIn) {
+      newSelectedList.push({"sku": sku, "S":(size == "S") ? 1 : 0, "M":(size == "M") ? 1 : 0, "L":(size == "L") ? 1 : 0, "XL":(size == "XL") ? 1 : 0, "price":price, "title":title});
+    }
+    setSelected(newSelectedList);
   }
-  return js;
+  
+  const revItemFromCart = (sku, size) => {
+    var temp = selected;
+    if (temp.hasOwnProperty(sku)) {
+      if (temp[sku][size] > 0) {
+        temp[sku][size] -= 1;
+        if (temp[sku]["S"] === 0 && temp[sku]["M"] === 0 && temp[sku]["L"] ===0 && temp[sku]["XL"] === 0) {
+          delete temp[sku];
+        }
+        setSelected(temp);
+      }
+    }
+  }
+  return [selected, addItemToCart, revItemFromCart, setSelected];
 }
 
 const App = () => {
   const [data, setData] = useState({});
   const products = Object.values(data);
-  const [selected, setSelected] = useState({"12064273040195392":{"sku":"12064273040195392", "S":0, "M":0, "L":3, "XL":1, "price":10.9, "title":"Cat Tee Black T-Shirt"}, "51498472915966370": {"sku":"51498472915966370", "S":1, "M":2, "L":0, "XL":0, "price":29.45, "title":"Dark Thug Blue-Navy T-Shirt"}});
+  // const [selected, setSelected] = useState({"12064273040195392":{"sku":"12064273040195392", "S":0, "M":0, "L":3, "XL":1, "price":10.9, "title":"Cat Tee Black T-Shirt"}, "51498472915966370": {"sku":"51498472915966370", "S":1, "M":2, "L":0, "XL":0, "price":29.45, "title":"Dark Thug Blue-Navy T-Shirt"}});
+  const [selected, addItemToCart, revItemFromCart, setSelected] = useSelection();
   const selectedItem = Object.values(selected);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -135,13 +172,11 @@ const App = () => {
     fetchProducts();
   }, []);
 
-
-
   return (
     <React.Fragment>
       {/* <Navbar></Navbar> */}
       <Sidebar
-        sidebar={<Cart selectedItem = { selectedItem } closeSidebar = {() => setSidebarOpen(false)} />}
+        sidebar={<Cart selectedItem = { selectedItem } closeSidebar = {() => setSidebarOpen(false)} addItemToCart = {addItemToCart} />}
         open={sidebarOpen}
         onSetOpen={(open) => {setSidebarOpen(open)}}
         styles={{ sidebar: { width: 300, background: "white" } }}>
@@ -150,10 +185,13 @@ const App = () => {
           Cart
         </Button>
       </Sidebar>
+      <Button onClick = {() => {
+        revItemFromCart(12064273040195392, "L");
+      }}>test</Button>
       
       <Container>
         <br />
-      <ShelfContainer products = {products} />
+      <ShelfContainer products = {products} addItemToCart = {addItemToCart} openSidebar = {() => setSidebarOpen(true)}/>
       </Container>
       
       
