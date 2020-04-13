@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
-import { Container, Column, Card, Button, Content, Box, Title, Media, Image } from 'rbx';
+import { Container, Column, Card, Button, Content, Box, Title, Message, Image } from 'rbx';
 import Sidebar from 'react-sidebar';
 import firebase from 'firebase/app';
 import 'firebase/database';
+import 'firebase/auth';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 
 const shirtsize = ['S', 'M', 'L', 'XL'];
 
@@ -20,6 +22,16 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database().ref();
+
+const uiConfig = {
+  signInFlow: 'popup',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ],
+  callbacks: {
+    signInSuccessWithAuthResult: () => false
+  }
+};
 
 //  <Button key = {sz + "_" + product.sku} onClick = { () => state.setSz(sz)}>{sz}</Button>;
 const SizeSlector = ({ product, inventoryList, state }) => {
@@ -61,7 +73,7 @@ const ShelfItem = ({ product, inventoryList, addItemToCart, openSidebar }) => {
       </Card.Content>
       <Card.Footer>
         <Card.Footer.Item>
-          <Button onClick = {() => {
+          <Button disabled = {(invenInfo["S"] + invenInfo["M"] + invenInfo["L"] + invenInfo["XL"] <= 0) ? "disabled" : ""} onClick = {() => {
             if (sz !== null) {
               addItemToCart(product.sku, sz, product.price, product.title);
               openSidebar();
@@ -69,7 +81,7 @@ const ShelfItem = ({ product, inventoryList, addItemToCart, openSidebar }) => {
             else {
               alert("Please select size.");
             }
-          }}>Add to Cart</Button>
+          }}>{(invenInfo["S"] + invenInfo["M"] + invenInfo["L"] + invenInfo["XL"] <= 0) ? "Out of Stock" : "Add to cart"}</Button>
         </Card.Footer.Item>
       </Card.Footer>
     </Card>
@@ -212,6 +224,31 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart, revItemFromCart, inve
 //   return [selected, addItemToCart, revItemFromCart, setSelected];
 // }
 
+const Banner = ({ title, user }) => (
+  <React.Fragment>
+    { user ? <Welcome user={ user } /> : <SignIn /> }
+    <Title>{ title || '[loading...]' }</Title>
+  </React.Fragment>
+);
+
+const Welcome = ({ user }) => (
+  <Message color="info">
+    <Message.Header>
+      Welcome, {user.displayName}
+      <Button primary onClick={() => firebase.auth().signOut()}>
+        Log out
+      </Button>
+    </Message.Header>
+  </Message>
+);
+
+const SignIn = () => (
+  <StyledFirebaseAuth
+    uiConfig={uiConfig}
+    firebaseAuth={firebase.auth()}
+  />
+);
+
 const App = () => {
   const [data, setData] = useState({});
   const products = Object.values(data);
@@ -221,6 +258,7 @@ const App = () => {
   const selectedItem = Object.values(selected);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inventory, setInventory] = useState({});
+  const [user, setUser] = useState(null);
   
   var inventoryTemp = {};
   for (var key in inventory) {
@@ -308,6 +346,10 @@ const App = () => {
     return () => { db.off('value', handleData); };
   }, []);
 
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged(setUser);
+  }, []);
+
   return (
     <React.Fragment>
       {/* <Navbar></Navbar> */}
@@ -316,6 +358,8 @@ const App = () => {
         open={sidebarOpen}
         onSetOpen={(open) => {setSidebarOpen(open)}}
         styles={{ sidebar: { width: 300, background: "white" } }}>
+        
+        <Banner title = {"Shirt Store"} user = {user} />
           <br /><br /><br />
         <Button onClick={() => setSidebarOpen(!sidebarOpen)}>
           Cart
