@@ -1,12 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
 import { Container, Column, Card, Button, Content, Box, Title, Media, Image } from 'rbx';
-//import CartSidebar from './components/CartSidebar';
 import Sidebar from 'react-sidebar';
-//import ShirtStore from './components/ShirtStore';
+import firebase from 'firebase/app';
+import 'firebase/database';
 
 const shirtsize = ['S', 'M', 'L', 'XL'];
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAixa1tDz1euYCj6MaQL0RFKEZJF4cSE3g",
+  authDomain: "cs394shoppingcart.firebaseapp.com",
+  databaseURL: "https://cs394shoppingcart.firebaseio.com",
+  projectId: "cs394shoppingcart",
+  storageBucket: "cs394shoppingcart.appspot.com",
+  messagingSenderId: "234645288479",
+  appId: "1:234645288479:web:ddcb25275bc4736b75872a",
+  measurementId: "G-V19DNEPG0J"
+};
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database().ref();
 
 //  <Button key = {sz + "_" + product.sku} onClick = { () => state.setSz(sz)}>{sz}</Button>;
 const SizeSlector = ({ product, inventoryList, state }) => {
@@ -19,14 +32,11 @@ const SizeSlector = ({ product, inventoryList, state }) => {
 
 const ShelfItem = ({ product, inventoryList, addItemToCart, openSidebar }) => {
   const [sz, setSz] = useState(null);
-  //console.log(inventoryList);
   var invenInfo = {};
   for (let i = 0; i < inventoryList.length; ++i) {
     if (String(product.sku) === inventoryList[i].sku) 
       invenInfo = inventoryList[i];
   }
-  //console.log(invenInfo);
-  //console.log(product);
   if (invenInfo === {}) invenInfo = {"sku": product.sku, "S":0, "M":0, "L":0, "XL":0};
 
   return (
@@ -80,11 +90,11 @@ const Cart = ({ selectedItem, closeSidebar, addItemToCart, revItemFromCart, inve
   amount = amount.toFixed(2);
 
   if (inventoryList.length === 0) {
-    for (var i = 0; i < selectedItem.length; ++i) 
-      inventoryList.push({"sku": selectedItem[i].sku, "S":0, "M":0, "L":0, "XL":0});
+    for (var j = 0; j < selectedItem.length; ++j) 
+      inventoryList.push({"sku": selectedItem[j].sku, "S":0, "M":0, "L":0, "XL":0});
   }
 
-  console.log(inventoryList);
+  //console.log(inventoryList);
 
   const controlButton = (sku, size, inventoryList) => {
     var unavailable = true;
@@ -235,7 +245,7 @@ const App = () => {
       }
     }
     if (!alreadyIn) {
-      newSelectedList.push({"sku": sku, "S":(size == "S") ? 1 : 0, "M":(size == "M") ? 1 : 0, "L":(size == "L") ? 1 : 0, "XL":(size == "XL") ? 1 : 0, "price":price, "title":title});
+      newSelectedList.push({"sku": sku, "S":(size === "S") ? 1 : 0, "M":(size === "M") ? 1 : 0, "L":(size === "L") ? 1 : 0, "XL":(size === "XL") ? 1 : 0, "price":price, "title":title});
     }
 
     var oldInventory = inventory;
@@ -286,15 +296,16 @@ const App = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       const response = await fetch('./data/products.json');
-      const inventoryResponse = await fetch('./data/inventory.json');
+      //const inventoryResponse = await fetch('./data/inventory.json');
       const json = await response.json();
-      const inventoryjson = await inventoryResponse.json();
+      //const inventoryjson = await inventoryResponse.json();
       setData(json);
-      // const inventoryResponse = await fetch('./data/inventory.json');
-      // const inventoryjson = await inventoryResponse.json();
-      setInventory(inventoryjson);
+      //setInventory(inventoryjson);
     };
     fetchProducts();
+    const handleData = snap => {if (snap.val()){ setInventory(snap.val()); }};
+    db.on('value', handleData, error => alert(error));
+    return () => { db.off('value', handleData); };
   }, []);
 
   return (
@@ -309,18 +320,20 @@ const App = () => {
         <Button onClick={() => setSidebarOpen(!sidebarOpen)}>
           Cart
         </Button>
+
+        <Container>
+        <br />
+      <ShelfContainer products = {products} inventoryList = {inve} addItemToCart = {addItemToCart} openSidebar = {() => setSidebarOpen(true)}/>
+      </Container>
       </Sidebar>
-      <Button onClick = {() => {
+      {/* <Button onClick = {() => {
         alert(JSON.stringify(inve));
       }}>test</Button>
       <Button onClick = {() => {
         alert(JSON.stringify(products));
-      }}>test1</Button>
+      }}>test1</Button> */}
       
-      <Container>
-        <br />
-      <ShelfContainer products = {products} inventoryList = {inve} addItemToCart = {addItemToCart} openSidebar = {() => setSidebarOpen(true)}/>
-      </Container>
+      
       
       
     </React.Fragment>
